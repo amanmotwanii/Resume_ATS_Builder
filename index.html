@@ -3,32 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>ATS Resume Builder</title>
+  <title>ATS Resume Builder + AI Job Suggestions</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     :root{--bg:#0f1221;--panel:#151936;--muted:#9aa3b2;--accent:#6ee7ff;--border:#252b50;--text:#e7ecf4}
     *{box-sizing:border-box}
     body{margin:0;font-family:Inter,sans-serif;background:linear-gradient(135deg,#0f1221 0%,#0e172a 70%);color:var(--text)}
-    .wrap{display:grid;grid-template-columns:380px 1fr;gap:16px;max-width:1200px;margin:20px auto;padding:16px}
+    .wrap{display:grid;grid-template-columns:420px 1fr;gap:16px;max-width:1300px;margin:20px auto;padding:16px}
     .card{background:var(--panel);border:1px solid var(--border);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
     .left{padding:18px;overflow:auto;max-height:calc(100vh - 40px)}
     .right{padding:0;overflow:auto;max-height:calc(100vh - 40px)}
     h1,h2{margin:0 0 10px}
     h2.title{font-size:18px;color:#dbe7ff;margin:10px 0 14px;display:flex;justify-content:space-between;align-items:center}
     label{display:block;font-size:12px;color:var(--muted);margin:6px 0 4px}
-    input,textarea{width:100%;background:#0f1430;border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;outline:none}
+    input,textarea,select{width:100%;background:#0f1430;border:1px solid var(--border);color:var(--text);padding:8px 10px;border-radius:8px;outline:none}
     textarea{min-height:40px;resize:vertical}
     .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-    .btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .btns{display:flex;gap:10px;flex-wrap:wrap;margin:8px 0 14px}
     .btn{border:none;border-radius:12px;padding:10px 14px;font-weight:600;color:#0b1324;background:var(--accent);cursor:pointer}
+    .btn.secondary{background:#232a52;color:#d7e1ff;border:1px solid var(--border)}
     .add-btn{background:#232a52;color:#fff;font-size:12px;padding:4px 8px;border-radius:8px;cursor:pointer;margin-top:6px;display:inline-block}
-    #resume{background:#fff;color:#222;font-family:Calibri,Arial,Helvetica,sans-serif;line-height:1.15;padding:32px;max-width:800px;margin:0 auto}
+    .muted{color:var(--muted);font-size:12px}
+    .pill{display:inline-block;border:1px solid var(--border);padding:4px 8px;border-radius:999px;margin:2px;background:#0f1430}
+    #resume{background:#fff;color:#222;font-family:Calibri,Arial,Helvetica,sans-serif;line-height:1.15;padding:32px;max-width:850px;margin:0 auto}
     #resume h1{font-size:28px;margin:0 0 4px}
     #resume .meta{font-size:12px;color:#333;margin-bottom:10px}
     #resume h2{font-size:15px;border-bottom:1px solid #ddd;padding-bottom:4px;margin:16px 0 8px;text-transform:uppercase;letter-spacing:.6px}
     #resume ul{padding-left:18px;margin:6px 0}
+    #resume li{margin:4px 0}
     .section-toggle{font-size:12px;color:#ff7070;cursor:pointer;margin-left:10px}
     .experience-block,.education-block,.project-block,.certification-block{border:1px dashed var(--border);padding:8px;border-radius:6px;margin-bottom:8px}
+    /* Jobs panel */
+    #jobs{padding:18px;border-top:1px solid var(--border)}
+    .job{border:1px solid var(--border);border-radius:12px;padding:10px;margin:8px 0;background:#0f1430}
+    .job h4{margin:0 0 6px;font-size:14px;color:#eaf2ff}
+    .job small{color:var(--muted)}
+    .badge{font-size:11px;border:1px solid var(--border);padding:2px 6px;border-radius:10px;margin-left:6px}
   </style>
 </head>
 <body>
@@ -38,6 +48,7 @@
       <button class="btn" id="exportPdf">Export PDF</button>
       <button class="btn" id="exportDocx">Export Word</button>
     </div>
+
     <h2 class="title">Personal Details</h2>
     <label>Full Name</label>
     <input id="name" oninput="syncAndRender()" />
@@ -49,95 +60,288 @@
     </div>
     <label>Location</label><input id="location" oninput="syncAndRender()" />
     <label>Links (comma separated)</label><input id="links" oninput="syncAndRender()" />
-    <h2 class="title">Professional Summary</h2>
+
+    <h2 class="title">Professional Summary<span class="section-toggle" onclick="clearSection('summary')">Remove</span></h2>
     <textarea id="summary" oninput="syncAndRender()"></textarea>
-    <h2 class="title">Skills</h2>
-    <textarea id="skills" oninput="syncAndRender()"></textarea>
-    <h2 class="title">Experience</h2>
+
+    <h2 class="title">Skills<span class="section-toggle" onclick="clearSection('skills')">Remove</span></h2>
+    <textarea id="skills" oninput="syncAndRender()" placeholder="e.g., React, Node.js, SQL, Java, REST, AWS"></textarea>
+
+    <h2 class="title">Experience<span class="section-toggle" onclick="clearSection('experience')">Remove</span></h2>
     <div id="experience-fields"></div>
     <div class="add-btn" onclick="addExperience()">+ Add Experience</div>
-    <h2 class="title">Education</h2>
+
+    <h2 class="title">Education<span class="section-toggle" onclick="clearSection('education')">Remove</span></h2>
     <div id="education-fields"></div>
     <div class="add-btn" onclick="addEducation()">+ Add Education</div>
-    <h2 class="title">Projects</h2>
+
+    <h2 class="title">Projects<span class="section-toggle" onclick="clearSection('projects')">Remove</span></h2>
     <div id="projects-fields"></div>
     <div class="add-btn" onclick="addProject()">+ Add Project</div>
-    <h2 class="title">Certifications</h2>
+
+    <h2 class="title">Certifications<span class="section-toggle" onclick="clearSection('certifications')">Remove</span></h2>
     <div id="certifications-fields"></div>
     <div class="add-btn" onclick="addCertification()">+ Add Certification</div>
-    <h2 class="title">Extra-Curricular</h2>
+
+    <h2 class="title">Extra-Curricular<span class="section-toggle" onclick="clearSection('activities')">Remove</span></h2>
     <div id="activities-fields"><textarea class="activities-entry" oninput="syncAndRender()"></textarea></div>
     <div class="add-btn" onclick="addField('activities')">+ Add More</div>
-    <h2 class="title">Interests</h2>
+
+    <h2 class="title">Interests<span class="section-toggle" onclick="clearSection('interests')">Remove</span></h2>
     <textarea id="interests" oninput="syncAndRender()"></textarea>
+
+    <!-- AI Job Suggestions Controls -->
+    <h2 class="title">AI Job Suggestions</h2>
+    <div class="row">
+      <div>
+        <label>Job Location (optional)</label>
+        <input id="jobLocation" placeholder="e.g., Bangalore, Remote" />
+      </div>
+      <div>
+        <label>Experience Filter</label>
+        <select id="expFilter">
+          <option value="fresher">Fresher / Entry</option>
+          <option value="experienced">Experienced</option>
+        </select>
+      </div>
+    </div>
+    <label>Jooble API Key (optional for live results)</label>
+    <input id="joobleKey" placeholder="Paste your Jooble API key" />
+    <div class="btns">
+      <button class="btn secondary" id="previewKeywords">Preview Extracted Keywords</button>
+      <button class="btn" id="findJobs">Find Jobs</button>
+    </div>
+    <div id="kwPreview" class="muted"></div>
+    <div id="jobs" class="card"></div>
   </section>
+
   <section class="card right"><div id="resume"></div></section>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
 <script>
+// ---------- Helpers ----------
 function makeLinks(text){
   return text.split(',').map(link=>{
     const t=link.trim();
     if(!t) return '';
-    const href = t.startsWith('http') ? t : 'https://' + t;
+    const href = /^https?:\/\//i.test(t) ? t : 'https://' + t;
     return `<a href="${href}" target="_blank">${t}</a>`;
   }).filter(Boolean).join(' | ');
 }
+function tokenize(str){
+  return (str||'')
+    .toLowerCase()
+    .replace(/[^a-z0-9+#\.\-\s]/g,' ')
+    .split(/\s+/)
+    .filter(Boolean);
+}
+const STOP = new Set('a an and the of for to in with on at by from is are as your you we our i am this that it be using use used into over plus'.split(' '));
+function extractKeywords(){
+  const d = collectAll();
+  const pools = [];
+  pools.push(d.title, d.summary, d.skills);
+  d.projects.forEach(p=>p && pools.push(p.name, p.tech, p.desc));
+  d.experience.forEach(e=>e && pools.push(e.company, e.desc, e.location, e.role));
+  d.education.forEach(e=>e && pools.push(e.course));
+  const counts = new Map();
+  pools.join ? null : null; // noop
+  pools.forEach(txt=>{
+    tokenize(txt||'').forEach(tok=>{
+      if(STOP.has(tok) || tok.length<2) return;
+      counts.set(tok, (counts.get(tok)||0)+1);
+    });
+  });
+  // sort by frequency and keep top 12
+  const sorted = Array.from(counts.entries()).sort((a,b)=>b[1]-a[1]).slice(0,12).map(([k])=>k);
+  // ensure tech stacks keep symbols like c++, node.js, react
+  return sorted;
+}
+function chipsHtml(list){
+  return list.map(k=>`<span class="pill">${k}</span>`).join(' ');
+}
+
+// ---------- Resume form dynamic blocks ----------
 function addExperience(){
   const c=document.getElementById('experience-fields');
   const b=document.createElement('div');
   b.className='experience-block';
-  b.innerHTML=`<label>Company Name</label><input class="experience-company" oninput="syncAndRender()" />
-  <label>Location</label><input class="experience-location" oninput="syncAndRender()" />
-  <div class="row"><div><label>Start Date</label><input class="experience-start" oninput="syncAndRender()" /></div>
-  <div><label>End Date</label><input class="experience-end" oninput="syncAndRender()" /></div></div>
-  <label>Brief Description</label><textarea class="experience-desc" oninput="syncAndRender()"></textarea>`;
+  b.innerHTML=`
+    <label>Company Name</label><input class="experience-company" oninput="syncAndRender()" />
+    <label>Location</label><input class="experience-location" oninput="syncAndRender()" />
+    <div class="row">
+      <div><label>Start Date</label><input class="experience-start" oninput="syncAndRender()" /></div>
+      <div><label>End Date</label><input class="experience-end" oninput="syncAndRender()" /></div>
+    </div>
+    <label>Brief Description</label><textarea class="experience-desc" oninput="syncAndRender()"></textarea>
+  `;
   c.appendChild(b);
 }
 function addEducation(){
   const c=document.getElementById('education-fields');
   const b=document.createElement('div');
   b.className='education-block';
-  b.innerHTML=`<label>Course</label><input class="education-course" oninput="syncAndRender()" />
-  <label>School Name</label><input class="education-school" oninput="syncAndRender()" />
-  <div class="row"><div><label>Start Date</label><input class="education-start" oninput="syncAndRender()" /></div>
-  <div><label>End Date</label><input class="education-end" oninput="syncAndRender()" /></div></div>
-  <label>Percentage</label><input class="education-percent" oninput="syncAndRender()" />`;
+  b.innerHTML=`
+    <label>Course</label><input class="education-course" oninput="syncAndRender()" />
+    <label>School Name</label><input class="education-school" oninput="syncAndRender()" />
+    <div class="row">
+      <div><label>Start Date</label><input class="education-start" oninput="syncAndRender()" /></div>
+      <div><label>End Date</label><input class="education-end" oninput="syncAndRender()" /></div>
+    </div>
+    <label>Percentage</label><input class="education-percent" oninput="syncAndRender()" />
+  `;
   c.appendChild(b);
 }
 function addProject(){
   const c=document.getElementById('projects-fields');
   const b=document.createElement('div');
   b.className='project-block';
-  b.innerHTML=`<label>Project Name</label><input class="project-name" oninput="syncAndRender()" />
-  <label>Tech Stack</label><input class="project-tech" oninput="syncAndRender()" />
-  <label>Date</label><input class="project-date" oninput="syncAndRender()" />
-  <label>Description</label><textarea class="project-desc" oninput="syncAndRender()"></textarea>`;
+  b.innerHTML=`
+    <label>Project Name</label><input class="project-name" oninput="syncAndRender()" />
+    <label>Tech Stack</label><input class="project-tech" oninput="syncAndRender()" />
+    <label>Date</label><input class="project-date" oninput="syncAndRender()" />
+    <label>Description</label><textarea class="project-desc" oninput="syncAndRender()"></textarea>
+  `;
   c.appendChild(b);
 }
 function addCertification(){
   const c=document.getElementById('certifications-fields');
   const b=document.createElement('div');
   b.className='certification-block';
-  b.innerHTML=`<label>Issuing Organization (bold in resume)</label><input class="cert-org" oninput="syncAndRender()" />
-  <label>Certificate Name</label><input class="cert-name" oninput="syncAndRender()" />
-  <label>Issue Date</label><input class="cert-date" oninput="syncAndRender()" />
-  <label>Verification Link</label><input class="cert-link" oninput="syncAndRender()" />
-  <label>Brief Description</label><textarea class="cert-desc" oninput="syncAndRender()"></textarea>`;
+  b.innerHTML=`
+    <label>Issuing Organization (bold in resume)</label><input class="cert-org" oninput="syncAndRender()" />
+    <label>Certificate Name</label><input class="cert-name" oninput="syncAndRender()" />
+    <label>Issue Date</label><input class="cert-date" oninput="syncAndRender()" />
+    <label>Verification Link</label><input class="cert-link" oninput="syncAndRender()" />
+    <label>Brief Description</label><textarea class="cert-desc" oninput="syncAndRender()"></textarea>
+  `;
   c.appendChild(b);
 }
 function addField(id){const d=document.getElementById(id+'-fields');const t=document.createElement('textarea');t.className=id+'-entry';t.oninput=syncAndRender;d.appendChild(t);}
-function collectExperience(){return Array.from(document.querySelectorAll('.experience-block')).map(b=>({company:b.querySelector('.experience-company').value,location:b.querySelector('.experience-location').value,start:b.querySelector('.experience-start').value,end:b.querySelector('.experience-end').value,desc:b.querySelector('.experience-desc').value})).filter(e=>e.company||e.desc);}
-function collectEducation(){return Array.from(document.querySelectorAll('.education-block')).map(b=>({course:b.querySelector('.education-course').value,school:b.querySelector('.education-school').value,start:b.querySelector('.education-start').value,end:b.querySelector('.education-end').value,percent:b.querySelector('.education-percent').value})).filter(e=>e.course||e.school);}
-function collectProjects(){return Array.from(document.querySelectorAll('.project-block')).map(b=>({name:b.querySelector('.project-name').value,tech:b.querySelector('.project-tech').value,date:b.querySelector('.project-date').value,desc:b.querySelector('.project-desc').value})).filter(p=>p.name||p.desc);}
-function collectCertifications(){return Array.from(document.querySelectorAll('.certification-block')).map(b=>({org:b.querySelector('.cert-org').value,name:b.querySelector('.cert-name').value,date:b.querySelector('.cert-date').value,link:b.querySelector('.cert-link').value,desc:b.querySelector('.cert-desc').value})).filter(c=>c.org||c.name);}
-function collectMulti(id){return Array.from(document.querySelectorAll(`.${id}-entry`)).map(e=>e.value).filter(Boolean);}
-function syncAndRender(){const d={name:document.getElementById('name').value,title:document.getElementById('title').value,email:document.getElementById('email').value,phone:document.getElementById('phone').value,location:document.getElementById('location').value,links:document.getElementById('links').value,summary:document.getElementById('summary').value,skills:document.getElementById('skills').value,experience:collectExperience(),education:collectEducation(),projects:collectProjects(),certifications:collectCertifications(),activities:collectMulti('activities'),interests:document.getElementById('interests').value};render(d);}
-function render(d){let html=`<h1>${d.name||''}</h1>`;if(d.title)html+=`<div class='meta'>${d.title}</div>`;const contact=[d.email,d.phone,d.location].filter(Boolean).join(' | ');const linksHtml=d.links?makeLinks(d.links):'';if(contact||linksHtml)html+=`<div class='meta'>${[contact,linksHtml].filter(Boolean).join(' | ')}</div>`;if(d.summary)html+=`<h2>Professional Summary</h2><p>${d.summary}</p>`;if(d.skills)html+=`<h2>Skills</h2><p>${d.skills}</p>`;if(d.experience.length)html+=`<h2>Experience</h2><ul>${d.experience.map(e=>`<li><strong>${e.company}</strong> - ${e.location} (${e.start} - ${e.end})<br>${e.desc}</li>`).join('')}</ul>`;if(d.education.length)html+=`<h2>Education</h2><ul>${d.education.map(e=>`<li><strong>${e.course}</strong> - ${e.school} (${e.start} - ${e.end})<br>Percentage: ${e.percent}</li>`).join('')}</ul>`;if(d.projects.length)html+=`<h2>Projects</h2><ul>${d.projects.map(p=>`<li><strong>${p.name}</strong> (${p.date})<br>Tech Stack: ${p.tech}<br>${p.desc}</li>`).join('')}</ul>`;if(d.certifications.length)html+=`<h2>Certifications</h2><ul>${d.certifications.map(c=>`<li><strong>${c.org}</strong> - ${c.name} (${c.date})<br><a href='${c.link}' target='_blank'>${c.link}</a><br>${c.desc}</li>`).join('')}</ul>`;if(d.activities.length)html+=`<h2>Extra-Curricular</h2><ul>${d.activities.map(a=>`<li>${a}</li>`).join('')}</ul>`;if(d.interests)html+=`<h2>Interests</h2><p>${d.interests}</p>`;document.getElementById('resume').innerHTML=html;}
+
+// ---------- Collectors ----------
+function collectExperience(){return Array.from(document.querySelectorAll('.experience-block')).map(b=>({company:b.querySelector('.experience-company').value.trim(),location:b.querySelector('.experience-location').value.trim(),start:b.querySelector('.experience-start').value.trim(),end:b.querySelector('.experience-end').value.trim(),desc:b.querySelector('.experience-desc').value.trim()})).filter(e=>e.company||e.desc);}
+function collectEducation(){return Array.from(document.querySelectorAll('.education-block')).map(b=>({course:b.querySelector('.education-course').value.trim(),school:b.querySelector('.education-school').value.trim(),start:b.querySelector('.education-start').value.trim(),end:b.querySelector('.education-end').value.trim(),percent:b.querySelector('.education-percent').value.trim()})).filter(e=>e.course||e.school);}
+function collectProjects(){return Array.from(document.querySelectorAll('.project-block')).map(b=>({name:b.querySelector('.project-name').value.trim(),tech:b.querySelector('.project-tech').value.trim(),date:b.querySelector('.project-date').value.trim(),desc:b.querySelector('.project-desc').value.trim()})).filter(p=>p.name||p.desc);}
+function collectCertifications(){return Array.from(document.querySelectorAll('.certification-block')).map(b=>({org:b.querySelector('.cert-org').value.trim(),name:b.querySelector('.cert-name').value.trim(),date:b.querySelector('.cert-date').value.trim(),link:b.querySelector('.cert-link').value.trim(),desc:b.querySelector('.cert-desc').value.trim()})).filter(c=>c.org||c.name);}
+function collectMulti(id){return Array.from(document.querySelectorAll(`.${id}-entry`)).map(e=>e.value.trim()).filter(Boolean);}
+function collectAll(){
+  return {
+    name:document.getElementById('name').value,
+    title:document.getElementById('title').value,
+    email:document.getElementById('email').value,
+    phone:document.getElementById('phone').value,
+    location:document.getElementById('location').value,
+    links:document.getElementById('links').value,
+    summary:document.getElementById('summary').value,
+    skills:document.getElementById('skills').value,
+    experience:collectExperience(),
+    education:collectEducation(),
+    projects:collectProjects(),
+    certifications:collectCertifications(),
+    activities:collectMulti('activities'),
+    interests:document.getElementById('interests').value
+  };
+}
+
+// ---------- Render Resume ----------
+function render(d){
+  let html=`<h1>${d.name||''}</h1>`;
+  if(d.title)html+=`<div class='meta'>${d.title}</div>`;
+  const contact=[d.email,d.phone,d.location].filter(Boolean).join(' | ');
+  const linksHtml=d.links?makeLinks(d.links):'';
+  if(contact||linksHtml)html+=`<div class='meta'>${[contact,linksHtml].filter(Boolean).join(' | ')}</div>`;
+  if(d.summary)html+=`<h2>Professional Summary</h2><p>${d.summary}</p>`;
+  if(d.skills)html+=`<h2>Skills</h2><p>${d.skills}</p>`;
+  if(d.experience.length)html+=`<h2>Experience</h2><ul>${d.experience.map(e=>`<li><strong>${e.company}</strong> - ${e.location} (${e.start} - ${e.end})<br>${e.desc}</li>`).join('')}</ul>`;
+  if(d.education.length)html+=`<h2>Education</h2><ul>${d.education.map(e=>`<li><strong>${e.course}</strong> - ${e.school} (${e.start} - ${e.end})<br>Percentage: ${e.percent}</li>`).join('')}</ul>`;
+  if(d.projects.length)html+=`<h2>Projects</h2><ul>${d.projects.map(p=>`<li><strong>${p.name}</strong> (${p.date})<br>Tech Stack: ${p.tech}<br>${p.desc}</li>`).join('')}</ul>`;
+  if(d.certifications.length)html+=`<h2>Certifications</h2><ul>${d.certifications.map(c=>`<li><strong>${c.org}</strong> - ${c.name} (${c.date})<br><a href='${c.link}' target='_blank'>${c.link}</a><br>${c.desc}</li>`).join('')}</ul>`;
+  if(d.activities.length)html+=`<h2>Extra-Curricular</h2><ul>${d.activities.map(a=>`<li>${a}</li>`).join('')}</ul>`;
+  if(d.interests)html+=`<h2>Interests</h2><p>${d.interests}</p>`;
+  document.getElementById('resume').innerHTML=html;
+}
+function syncAndRender(){ render(collectAll()); }
+
+// ---------- Export ----------
 exportPdf.onclick=()=>{html2pdf().from(document.getElementById('resume')).save('resume.pdf')};
 exportDocx.onclick=async()=>{const {Document,Packer,Paragraph}=window.docx;const children=document.getElementById('resume').innerText.split('\n').map(t=>new Paragraph(t));const doc=new Document({sections:[{children}]});const blob=await Packer.toBlob(doc);const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='resume.docx';a.click();URL.revokeObjectURL(a.href);};
+
+// ---------- Jobs: Fetch + Rank ----------
+function expModeQuery(base,mode){
+  if(mode==='fresher') return base + ' (junior OR "entry level" OR fresher)';
+  return base + ' (mid OR senior OR lead OR experienced)';
+}
+function scoreJob(job, kws){
+  const text = ((job.title||'')+' '+(job.snippet||job.description||'')).toLowerCase();
+  let score = 0; kws.forEach(k=>{ if(text.includes(k.toLowerCase())) score+=1; });
+  // small boost for title matches
+  kws.forEach(k=>{ if((job.title||'').toLowerCase().includes(k.toLowerCase())) score+=1; });
+  return score;
+}
+function clientFilterByExperience(jobs, mode){
+  if(mode==='experienced') return jobs.filter(j=>/(\b[3-9]\+?\s*years?|senior|lead|manager|staff)/i.test((j.description||j.snippet||'')) || /(senior|lead|manager|staff)/i.test(j.title||''));
+  // fresher
+  return jobs.filter(j=>/(entry[- ]level|junior|graduate|fresher|0-2\s*years)/i.test((j.description||j.snippet||'')) || /(junior|entry)/i.test(j.title||''));
+}
+async function fetchJobsJooble({keywords, location, mode, key}){
+  const payload = { keywords: expModeQuery(keywords, mode), location: location||'', page:1};
+  try{
+    const res = await fetch(`https://jooble.org/api/${key}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    if(!res.ok) throw new Error('Network response was not ok');
+    const data = await res.json();
+    const raw = data.jobs || [];
+    return raw.map(j=>({
+      title:j.title, company:j.company, location:j.location, link:j.link, snippet:j.snippet, description:j.snippet
+    }));
+  }catch(err){
+    console.warn('Jooble fetch failed, falling back to demo data:', err);
+    return demoJobs();
+  }
+}
+function demoJobs(){
+  // Offline/demo fallback
+  return [
+    {title:'Junior Frontend Developer', company:'PixelForge', location:'Remote', link:'#', description:'Entry-level React/JS developer. 0-2 years. Build UI components.'},
+    {title:'Senior React Engineer', company:'SkyStack', location:'Bengaluru', link:'#', description:'Senior role, 5+ years, React, TypeScript, Jest.'},
+    {title:'Backend Engineer (Node.js)', company:'DataNest', location:'Hyderabad', link:'#', description:'Mid-level 3+ years. Node, Express, MongoDB.'},
+    {title:'Graduate Software Trainee', company:'CodeCrafters', location:'Pune', link:'#', description:'Fresher/Graduate trainee, JavaScript basics, HTML/CSS.'}
+  ];
+}
+function renderJobs(jobs, kws, mode){
+  // rank by keyword overlap
+  const ranked = jobs.map(j=>({job:j, score:scoreJob(j,kws)}))
+    .sort((a,b)=>b.score-a.score)
+    .map(x=>x.job);
+  const filtered = clientFilterByExperience(ranked, mode);
+  const list = filtered.slice(0,10).map(j=>`
+    <div class="job">
+      <h4>${j.title} <span class="badge">${j.company||''}</span></h4>
+      <small>${j.location||''}</small>
+      <div class="muted" style="margin:6px 0 8px">${(j.description||'').slice(0,180)}...</div>
+      <a class="btn" style="padding:6px 10px;font-size:12px" target="_blank" href="${j.link||'#'}">Apply</a>
+    </div>`).join('');
+  document.getElementById('jobs').innerHTML = (list||'').trim() ? list : '<div class="muted">No matches found. Try switching the filter or adding skills.</div>';
+}
+
+// ---------- Wire up buttons ----------
+previewKeywords.onclick=()=>{
+  const kws = extractKeywords();
+  document.getElementById('kwPreview').innerHTML = `<div class="muted">Keywords:</div>${chipsHtml(kws)}`;
+};
+findJobs.onclick=async()=>{
+  const kws = extractKeywords();
+  const mode = document.getElementById('expFilter').value;
+  const location = document.getElementById('jobLocation').value.trim();
+  const key = document.getElementById('joobleKey').value.trim();
+  const base = kws.slice(0,8).join(' ');
+  document.getElementById('kwPreview').innerHTML = `<div class="muted">Searching with:</div>${chipsHtml(kws.slice(0,8))}`;
+  const jobs = key ? await fetchJobsJooble({keywords:base, location, mode, key}) : demoJobs();
+  renderJobs(jobs, kws, mode);
+};
+
+// ---------- Init ----------
 addExperience();addEducation();addProject();addCertification();syncAndRender();
 </script>
 </body>
